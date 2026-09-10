@@ -1,35 +1,29 @@
 {
-  "name": "LOGISTPULSE Platform Engineering Lab",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "name": "ERP-PULSE V1",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
-      "dockerDashComposeVersion": "v2"
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [
-    8080,
-    3000,
-    9090,
-    8088
-  ],
+  "forwardPorts": [8000, 5432],
   "portsAttributes": {
-    "8080": {
-      "label": "LOGISTPULSE Operations Console"
+    "8000": {
+      "label": "ERP-PULSE",
+      "onAutoForward": "openPreview"
     },
-    "3000": {
-      "label": "Grafana"
-    },
-    "9090": {
-      "label": "Prometheus"
-    },
-    "8088": {
-      "label": "cAdvisor"
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
     }
   },
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  "remoteUser": "vscode"
+  "postCreateCommand": "bash scripts/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg"
+      ]
+    }
+  }
 }

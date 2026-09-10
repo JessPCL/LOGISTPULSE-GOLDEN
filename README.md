@@ -1,65 +1,116 @@
-# LOGISTPULSE-GOLDEN V1.0
+# ERP-PULSE V1
 
-**Independent LOGISTdragon universe — Operations, Logistics, IoT and Platform Engineering laboratory.**
+ERP empresarial mínimo para órdenes de transferencia, inventario por lote,
+reservas, tareas logísticas y movimientos de material. Es la capa tipo SAP del
+ecosistema PULSE.
 
-LOGISTPULSE simulates a national restaurant/retail operation with 300 stores, distribution centers, fleet telemetry, kitchen equipment and event-driven order fulfillment. It is intentionally independent from BANKdragon/BANKPULSE.
-
-## Product domains
-
-- **Smart Inventory** — stock, forecast and stockout risk.
-- **Supply & Distribution** — trucks, ETA and cold chain.
-- **Smart Operations** — MQTT equipment telemetry and operational state.
-- **Order Fulfillment** — event-driven kitchen queue using Kafka-compatible Redpanda.
-
-## Architecture
+## Flujo demostrable
 
 ```text
-Browser / Operations Console :8080
-          |
-       Nginx Edge
-          |
-  +-------+---------+-----------+
-  |       |         |           |
-Inventory Distribution Operations Fulfillment
-  |       |         |           |
-Postgres Postgres  MongoDB    Postgres
-                    ^           |
-                    |           v
-                  MQTT       Redpanda
-                    ^           |
-              Telemetry      Worker
-              Simulator
-
-Prometheus + Grafana + cAdvisor observe the runtime.
+ORD-000001
+  → validar datos
+  → reservar 50 unidades
+  → seleccionar lote FEFO
+  → crear WT-000001
+  → publicar TransportRequested
+  → iniciar ejecución
+  → confirmar movimiento 311
+  → actualizar inventario
+  → registrar auditoría
 ```
 
-## Start
+## Componentes
+
+- API Node.js 22 + Express + TypeScript.
+- PostgreSQL 16 como fuente de verdad.
+- Liquibase para Database-as-Code.
+- Interfaz responsive de seis pantallas.
+- Transactional Outbox para LOGISTPULSE.
+- 10.000 materiales y más de 20.000 registros de prueba.
+- Docker Compose y configuración de GitHub Codespaces.
+
+## Iniciar en Codespaces
+
+1. Cargue el contenido del ZIP en la raíz de un repositorio GitHub.
+2. Abra **Code → Codespaces → Create codespace on main**.
+3. Espere a que finalice la preparación.
+4. Ejecute:
 
 ```bash
-cp .env.example .env
-docker compose up -d --build
+docker compose up --build
+```
+
+5. Abra el puerto `8000` cuando Codespaces lo anuncie.
+
+Liquibase crea el modelo y carga automáticamente los datos antes de iniciar la
+aplicación.
+
+## Comandos útiles
+
+```bash
+# Levantar la plataforma
+docker compose up --build
+
+# Ver servicios
 docker compose ps
+
+# Ejecutar smoke test
 bash scripts/smoke.sh
+
+# Detener sin borrar datos
+docker compose stop
+
+# Detener y eliminar contenedores, conservando el código
+docker compose down
+
+# Reinicio completo de la base de demostración
+docker compose down -v
+docker compose up --build
 ```
 
-Open Codespaces port **8080**.
+El último comando elimina el volumen de PostgreSQL y debe utilizarse solo para
+reiniciar el laboratorio.
 
-## Observability
+## Desarrollo sin contenedor de aplicación
+
+Mantenga PostgreSQL y Liquibase en Docker:
 
 ```bash
-docker compose -f observability/compose.yaml up -d
+docker compose up database liquibase
+npm run dev
 ```
 
-- Grafana `3000` — `admin / logistpulse_demo`
-- Prometheus `9090`
-- cAdvisor `8088`
+La aplicación usa por defecto:
 
-## Git/CI model
+```text
+postgresql://erp_pulse:erp_pulse@localhost:5432/erp_pulse
+```
 
-Work through feature branches and Pull Requests. `.github/workflows/ci.yml` validates the architecture contract, Compose configuration, builds the distributed stack and runs smoke tests before merge.
+## API principal
 
-## Academic ownership
+```text
+GET  /api/health
+GET  /api/dashboard
+GET  /api/materials
+GET  /api/inventory
+GET  /api/orders
+POST /api/orders
+POST /api/orders/{number}/validate
+POST /api/orders/{number}/reserve
+POST /api/orders/{number}/release
+POST /api/orders/{number}/start
+POST /api/orders/{number}/confirm
+POST /api/orders/{number}/cancel
+GET  /api/movements
+GET  /api/integration/events
+GET  /api/integration/audit
+```
 
-Design of Systems teams own frontend/backend product evolution. Software Development teams act as DevOps/Platform teams: Codespaces, CI/CD, containerization, integration readiness, observability and later DevSecOps security gates.
+## Alcance y seguridad
 
-See `docs/` for C4, data ownership, missions and incident runbooks.
+ERP-PULSE V1 es un laboratorio empresarial ejecutable. Implementa integridad,
+transacciones, validaciones, auditoría y cabeceras HTTP seguras, pero no incluye
+todavía un proveedor OIDC ni RBAC productivo. No debe publicarse en Internet con
+las credenciales de demostración. La siguiente versión incorporará identidad,
+roles y entrega efectiva del Outbox mediante Kafka/Redpanda.
+

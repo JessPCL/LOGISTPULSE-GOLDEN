@@ -1,0 +1,51 @@
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: erp_pulse
+      POSTGRES_USER: erp_pulse
+      POSTGRES_PASSWORD: erp_pulse
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_pulse -d erp_pulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - erp-pulse-data:/var/lib/postgresql/data
+
+  liquibase:
+    image: liquibase/liquibase:4.31.1
+    depends_on:
+      database:
+        condition: service_healthy
+    command:
+      - --url=jdbc:postgresql://database:5432/erp_pulse
+      - --username=erp_pulse
+      - --password=erp_pulse
+      - --changelog-file=changelog/db.changelog-master.yaml
+      - update
+    volumes:
+      - ./database:/liquibase/changelog
+
+  app:
+    build: .
+    environment:
+      PORT: 8000
+      DATABASE_URL: postgresql://erp_pulse:erp_pulse@database:5432/erp_pulse
+      APP_ENV: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      liquibase:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/api/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  erp-pulse-data:
+

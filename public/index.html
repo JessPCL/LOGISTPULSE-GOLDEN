@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ERP-PULSE V1: órdenes, inventario, reservas, movimientos e integración logística." />
+    <title>ERP-PULSE V1</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">P</div>
+          <div>
+            <strong>ERP-PULSE</strong>
+            <span>Enterprise Core · V1</span>
+          </div>
+        </div>
+        <nav aria-label="Módulos principales">
+          <p class="nav-label">OPERACIÓN EMPRESARIAL</p>
+          <button class="nav-item active" data-screen="dashboard"><span>⌂</span>Dashboard</button>
+          <button class="nav-item" data-screen="materials"><span>▦</span>Materiales</button>
+          <button class="nav-item" data-screen="inventory"><span>▤</span>Inventario</button>
+          <button class="nav-item" data-screen="orders"><span>◎</span>Órdenes</button>
+          <button class="nav-item" data-screen="movements"><span>⇄</span>Movimientos</button>
+          <button class="nav-item" data-screen="integration"><span>⌁</span>Integración</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="status-dot" id="service-dot"></span>
+          <div><strong id="service-label">Comprobando servicio</strong><small>PostgreSQL + Liquibase</small></div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="topbar-title">
+            <button id="menu-button" class="icon-button mobile-only" aria-label="Abrir navegación">☰</button>
+            <div><h1 id="screen-title">Centro empresarial</h1><p id="screen-subtitle">Órdenes, inventario y ejecución logística</p></div>
+          </div>
+          <div class="topbar-actions">
+            <div class="plant-chip"><span class="status-dot"></span>PLANTA-QUITO</div>
+            <button class="button secondary" id="refresh-button">Actualizar</button>
+            <button class="button primary" id="new-order-button">＋ Nueva orden</button>
+          </div>
+        </header>
+
+        <main id="content" tabindex="-1" aria-live="polite"></main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="modal-backdrop">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header class="modal-header"><div><p class="eyebrow">ERP-PULSE</p><h2 id="modal-title">Detalle</h2></div><button class="icon-button" id="modal-close" aria-label="Cerrar">×</button></header>
+        <div class="modal-body" id="modal-body"></div>
+      </section>
+    </div>
+
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
+
