@@ -1,65 +1,84 @@
-# LOGISTPULSE-GOLDEN V1.0
+# PULSEFLEET
 
-**Independent LOGISTdragon universe — Operations, Logistics, IoT and Platform Engineering laboratory.**
+Simulador interactivo de gestión de flotas AMR para el ecosistema LOGISTPULSE.
 
-LOGISTPULSE simulates a national restaurant/retail operation with 300 stores, distribution centers, fleet telemetry, kitchen equipment and event-driven order fulfillment. It is intentionally independent from BANKdragon/BANKPULSE.
+## Funcionalidades
 
-## Product domains
+- Mission Control con mapa 2D y telemetría en tiempo real.
+- Fleet Overview con estado, batería, capacidad y acciones por robot.
+- Mission Board con asignación, ejecución y trazabilidad SSCC.
+- Incident Center con reconocimiento y resolución de excepciones.
+- Map Editor para añadir nodos y bloquear segmentos.
+- Ruteo por Dijkstra ponderado por distancia real y congestión de la flota (ver "Navegación" abajo).
+- Puente WebSocket hacia Unreal Engine 5 para un gemelo digital 3D (ver "Puente con Unreal Engine 5" abajo).
+- Scenario Simulator con fallos, prioridad, congestión y velocidad variable.
+- Persistencia local automática en el navegador.
 
-- **Smart Inventory** — stock, forecast and stockout risk.
-- **Supply & Distribution** — trucks, ETA and cold chain.
-- **Smart Operations** — MQTT equipment telemetry and operational state.
-- **Order Fulfillment** — event-driven kitchen queue using Kafka-compatible Redpanda.
+## Navegación
 
-## Architecture
+El planificador de rutas (`lib/pulsefleet.ts`, función `shortestPath`) usa Dijkstra
+sobre la distancia euclidiana real entre nodos, no un simple conteo de saltos.
+Además suma un costo de congestión por cada robot que ya está recorriendo un
+segmento, así que la flota prefiere una ruta más larga pero libre en vez de
+amontonarse en el camino "más corto" cuando ya está ocupado. Los tests en
+`tests/navigation-and-bridge.test.mjs` cubren ambos comportamientos.
 
-```text
-Browser / Operations Console :8080
-          |
-       Nginx Edge
-          |
-  +-------+---------+-----------+
-  |       |         |           |
-Inventory Distribution Operations Fulfillment
-  |       |         |           |
-Postgres Postgres  MongoDB    Postgres
-                    ^           |
-                    |           v
-                  MQTT       Redpanda
-                    ^           |
-              Telemetry      Worker
-              Simulator
+## Puente con Unreal Engine 5
 
-Prometheus + Grafana + cAdvisor observe the runtime.
-```
+`lib/unreal-bridge.ts` serializa el estado (nodos, arcos, robots) a un
+snapshot plano en metros con el schema `pulsefleet.unreal.v1`, incluyendo el
+heading de cada robot en grados. Para transmitirlo en vivo:
 
-## Start
+1. Ejecuta `npm run bridge:server` (levanta un relay WebSocket en
+   `ws://localhost:8787`; en Codespaces, expón ese puerto como público).
+2. En la app, ve a **Map Editor → Puente Unreal Engine 5**, activa el switch
+   y confirma que el estado pase a "Conectado".
+3. En tu proyecto de Unreal, conecta un cliente WebSocket (Blueprint o C++) a
+   la misma URL. Cada mensaje entrante es un snapshot JSON completo; puedes
+   usarlo para actualizar Actors sobre un NavMesh construido a partir de los
+   mismos nodos.
+4. Unreal puede enviar eventos de vuelta con `{"type":"toggle_edge","edgeId":"E-08"}`
+   o `{"type":"robot_action","robotId":"AMR-01","action":"PAUSE"}`; el hook
+   `useUnrealBridge` los aplica sobre el motor de simulación.
+
+También puedes usar el botón "Copiar snapshot JSON" del mismo panel para una
+prueba puntual sin levantar el servidor.
+
+## Ejecutar en GitHub Codespaces
+
+1. Crear un repositorio nuevo y cargar el contenido de este proyecto.
+2. Abrir **Code → Codespaces → Create codespace on main**.
+3. Esperar que finalice la instalación automática.
+4. Ejecutar:
 
 ```bash
-cp .env.example .env
-docker compose up -d --build
-docker compose ps
-bash scripts/smoke.sh
+npm run dev
 ```
 
-Open Codespaces port **8080**.
+5. Abrir el puerto `5173` cuando Codespaces lo anuncie.
 
-## Observability
+## Ejecutar localmente
+
+Requiere Node.js 22 o superior.
 
 ```bash
-docker compose -f observability/compose.yaml up -d
+npm install
+npm run dev
 ```
 
-- Grafana `3000` — `admin / logistpulse_demo`
-- Prometheus `9090`
-- cAdvisor `8088`
+## Construir
 
-## Git/CI model
+```bash
+npm run build
+```
 
-Work through feature branches and Pull Requests. `.github/workflows/ci.yml` validates the architecture contract, Compose configuration, builds the distributed stack and runs smoke tests before merge.
+## Alcance
 
-## Academic ownership
+Esta versión implementa la lógica de simulación en el navegador. No controla motores,
+sensores ni funciones certificadas de seguridad. La integración futura con ROS 2,
+Open-RMF o un Fleet Manager comercial debe realizarse mediante adaptadores.
 
-Design of Systems teams own frontend/backend product evolution. Software Development teams act as DevOps/Platform teams: Codespaces, CI/CD, containerization, integration readiness, observability and later DevSecOps security gates.
+## Restablecer los datos
 
-See `docs/` for C4, data ownership, missions and incident runbooks.
+Use **Scenario Simulator → Reiniciar**. Esto restaura robots, mapa, misiones e
+incidentes iniciales.
