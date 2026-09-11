@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - include:
+      file: 001_erp_pulse_ddl.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 002_erp_pulse_dml.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 003_normalization_refinement.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 004_order_state_constraints.sql
+      relativeToChangelogFile: true
+
